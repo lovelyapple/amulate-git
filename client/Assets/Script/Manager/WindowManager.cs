@@ -37,30 +37,60 @@ public class WindowManager : SingleTonBase<WindowManager>
             return _windowList;
         }
     }
-    public void CreateAndOpen(WindowIndex index, bool openAsTop = true, Action<WindowBase> onLoaded = null)
+    public void CreateAndOpen(WindowIndex index, bool openAsTop = true, Action<WindowBase> onOpened = null)
     {
         var targetWindow = windowList[(int)index];
 
         if (targetWindow == null)
         {
-            targetWindow = CreateWindow(index);
+            CreateWindow(index, (wnd) =>
+            {
+                OpenWindow(index, openAsTop, onOpened);
+            });
         }
         else
         {
-            if (openAsTop)
+            OpenWindow(index, openAsTop, onOpened);
+        }
+    }
+    void OpenWindow(WindowIndex index, bool openAsTop = true, Action<WindowBase> onOpened = null
+    )
+    {
+        var wnd = windowList[(int)index];
+
+        if (wnd == null)
+        {
+            Debug.LogError("Wnd is not exist index " + index.ToString());
+            return;
+        }
+
+        wnd.Open(openAsTop);
+
+        if (onOpened != null)
+        {
+            onOpened(wnd);
+        }
+    }
+    void CreateWindow(WindowIndex index, Action<WindowBase> onCreated)
+    {
+        ResourceManager.Get().LoadResource(windowPathDict[index], (o) =>
+        {
+            var wind = o.GetComponent<WindowBase>();
+
+            if (wind == null)
             {
-                windowList[(int)index].OpenAsTop();
+                Debug.Log("ロードしたオブジェクトにwindowが無かった");
             }
             else
             {
-                windowList[(int)index].Open();
+                windowList[(int)index] = wind;
             }
-        }
 
-        if (IsWindowOpened(index) && onLoaded != null)
+
+        }, (path) =>
         {
-            onLoaded(targetWindow);
-        }
+            Debug.LogError(index.ToString() + "のロードが失敗した");
+        });
     }
     public bool IsWindowOpened(WindowIndex index)
     {
@@ -75,19 +105,20 @@ public class WindowManager : SingleTonBase<WindowManager>
             return targetWindow.gameObject.activeSelf;
         }
     }
-    WindowBase CreateWindow(WindowIndex index)
+    public void UnInitManager()
     {
-        ResourceManager.Get().LoadResource(windowPathDict[index], (o) =>
-        {
-            var wind = o.GetComponent<WindowBase>();
+        var length = windowList.Count;
 
-            if (wind == null)
+        for (int i = 0; i < length; i++)
+        {
+            var wnd = windowList[i];
+
+            if (wnd != null)
             {
-                Debug.Log("ロードしたオブジェクトにwindowが無かった");
+                wnd.DeleteThisObject();
             }
-        }, (path) =>
-        {
+        }
 
-        });
+        windowList.Clear();
     }
 }

@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 public class ResourceManager : ManagerBase<ResourceManager>
 {
-    public void LoadResource(string path, Action<string> onLoadFailed = null)
+    public void LoadResource(string path, Action<GameObject> onLoaded, Action<string> onLoadFailed = null)
     {
         var go = Resources.Load<GameObject>(path);
 
